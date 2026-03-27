@@ -7,8 +7,8 @@ from pathlib import Path
 import wandb
 import os
 import torch.distributed as dist
-
-
+from torch.utils.tensorboard import SummaryWriter
+import torchvision
 def save_images(webpage, visuals, image_path, aspect_ratio=1.0, width=256):
     """Save images to the disk.
 
@@ -53,6 +53,7 @@ class Visualizer:
         Step 3: create an HTML object for saving HTML files
         Step 4: create a logging file to store training losses
         """
+        self.tb_writer = SummaryWriter(log_dir=os.path.join(opt.checkpoints_dir, 'tensorboard', opt.name))
         self.opt = opt  # cache the option
         self.use_html = opt.isTrain and not opt.no_html
         self.win_size = opt.display_winsize
@@ -109,6 +110,11 @@ class Visualizer:
                 ims_dict[f"results/{label}"] = wandb_image
             self.wandb_run.log(ims_dict, step=total_iters)
 
+        for label, image in visuals.items():
+            grid = torchvision.utils.make_grid(image[:4], normalize=False)
+            self.tb_writer.add_image(f'Visuals/{label}', grid, epoch)
+        
+            
         if self.use_html and (save_result or not self.saved):  # save images to an HTML file if they haven't been saved.
             self.saved = True
             # save images to the disk
@@ -141,7 +147,9 @@ class Visualizer:
         # Only plot losses on main process (rank 0)
         if dist.is_initialized() and dist.get_rank() != 0:
             return
-
+    
+        for label, value in losses.items():
+            self.tb_writer.add_scalar(f'Loss/{label}', value, total_iters)
         if self.use_wandb:
             self.wandb_run.log(losses, step=total_iters)
 
