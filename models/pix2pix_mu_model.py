@@ -38,6 +38,8 @@ class Pix2PixMUModel(BaseModel):
         if is_train:
             parser.set_defaults(pool_size=0, gan_mode="vanilla")
             parser.add_argument("--lambda_L1", type=float, default=100.0, help="weight for L1 loss")
+            parser.add_argument("--G_LR_Mul", type=float, default=1.0, help="weight for L1 loss")
+            parser.add_argument("--D_LR_Mul", type=float, default=0.1, help="weight for L1 loss")
 
         return parser
 
@@ -70,7 +72,7 @@ class Pix2PixMUModel(BaseModel):
             self.criterionL1 = torch.nn.L1Loss()
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
             self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
-            self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr*0.1, betas=(opt.beta1, 0.999))
+            self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr*opt.G_LR_MUL, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
 
