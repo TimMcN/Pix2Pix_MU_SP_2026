@@ -108,14 +108,15 @@ class Pix2PixMUModel(BaseModel):
         if writer is None:
             print("NO WRITER")
             return
-        real_A_row = self.real_A[0:4, 0, 0, :].detach().cpu().numpy()
-        fake_B_rows = self.fake_B[0:4, 0].detach().cpu().numpy()
-        real_B_rows = self.real_B[0:4, 0].detach().cpu().numpy()
+        max_s = 4 if 4 < self.opt.batch_size else self.opt.batch_size
+        real_A_row = self.real_A[0:max_s, 0, 0, :].detach().cpu().numpy()
+        fake_B_rows = self.fake_B[0:max_s, 0].detach().cpu().numpy()
+        real_B_rows = self.real_B[0:max_s, 0].detach().cpu().numpy()
 
-        fig1, axes1 = plt.subplots(1, 4, figsize=(15, 5))
-        fig2, axes2 = plt.subplots(1, 4, figsize=(15, 5))
-        fig3, axes3 = plt.subplots(1, 4, figsize=(15, 5))
-        for i in range(4):
+        fig1, axes1 = plt.subplots(1, max_s, figsize=(15, 5))
+        fig2, axes2 = plt.subplots(1, max_s, figsize=(15, 5))
+        fig3, axes3 = plt.subplots(1, max_s, figsize=(15, 5))
+        for i in range(max_s):
 
             axes1[i].plot(real_A_row[i], color='blue') 
             axes2[i].plot(fake_B_rows[i].T, color='red', alpha=0.1)  
