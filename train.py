@@ -33,9 +33,9 @@ if __name__ == "__main__":
     opt.device = init_ddp()
     #batch_size = 128
     #dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
-    dataset_size = 30000  # get the number of images in the dataset.
+    dataset_size = opt.max_dataset_size  # get the number of images in the dataset.
     print(f"The number of training images = {dataset_size}")
-    generator = Lorentz_Generator(mode="diagonalized", dataset=9, padding = 25, n_range=(0.1, 2000, 256))
+    generator = Lorentz_Generator(mode="diagonalized", dataset=opt.dataset, padding = 25, n_range=(0.1, 2000, 256))
     model = create_model(opt)  # create a model given opt.model and other options
     model.setup(opt)  # regular setup: load and print networks; create schedulers
     visualizer = Visualizer(opt)  # create a visualizer that display/save images and plots
@@ -47,7 +47,7 @@ if __name__ == "__main__":
         visualizer.reset()
         # Set epoch for DistributedSampler
         
-        for i in range(math.ceil(dataset_size/opt.batch_size)):  # inner loop within one epoch
+        for i in range(math.ceil(opt.max_dataset_size/opt.batch_size)):  # inner loop within one epoch
             iter_start_time = time.time()  # timer for computation per iteration
             if total_iters % opt.print_freq == 0:
                 t_data = iter_start_time - iter_data_time

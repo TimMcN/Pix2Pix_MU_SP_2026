@@ -1,7 +1,6 @@
 import torch
 from .base_model import BaseModel
 from . import networks
-from .lorentz_generator import Lorentz_Generator
 from collections import OrderedDict
 import matplotlib.pyplot as plt
 import io
@@ -38,8 +37,9 @@ class Pix2PixMUModel(BaseModel):
         if is_train:
             parser.set_defaults(pool_size=0, gan_mode="vanilla")
             parser.add_argument("--lambda_L1", type=float, default=100.0, help="weight for L1 loss")
-            parser.add_argument("--G_LR_Mul", type=float, default=1.0, help="weight for L1 loss")
-            parser.add_argument("--D_LR_Mul", type=float, default=0.1, help="weight for L1 loss")
+            parser.add_argument("--G_LR_Mul", type=float, default=1.0, help="Learning Rate Multiplier for Generator")
+            parser.add_argument("--D_LR_Mul", type=float, default=0.1, help="Learning Rate Multiplier for Discriminator")
+            parser.add_argument("--dataset", type=int, default=1, help="Dataset Key for lorentz generation")
 
         return parser
 
@@ -71,8 +71,8 @@ class Pix2PixMUModel(BaseModel):
             self.criterionGAN = networks.GANLoss(opt.gan_mode).to(self.device)  # move to the device for custom loss
             self.criterionL1 = torch.nn.L1Loss()
             # initialize optimizers; schedulers will be automatically created by function <BaseModel.setup>.
-            self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr*opt.G_LR_MUL, betas=(opt.beta1, 0.999))
-            self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr*opt.D_LR_MUL, betas=(opt.beta1, 0.999))
+            self.optimizer_G = torch.optim.Adam(self.netG.parameters(), lr=opt.lr*opt.G_LR_Mul, betas=(opt.beta1, 0.999))
+            self.optimizer_D = torch.optim.Adam(self.netD.parameters(), lr=opt.lr*opt.D_LR_Mul, betas=(opt.beta1, 0.999))
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
 
