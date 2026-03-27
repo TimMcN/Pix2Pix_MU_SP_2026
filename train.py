@@ -25,7 +25,7 @@ from data import create_dataset
 from models import create_model
 from util.visualizer import Visualizer
 from util.util import init_ddp, cleanup_ddp
-from tim.generator import Diagonalized_Generator, Unordered_Generator, Lorentz_Generator
+from generators.generator import Diagonalized_Generator, Unordered_Generator, Lorentz_Generator
 import math
 
 if __name__ == "__main__":
