@@ -40,16 +40,18 @@ if __name__ == "__main__":
     model.setup(opt)  # regular setup: load and print networks; create schedulers
     visualizer = Visualizer(opt)  # create a visualizer that display/save images and plots
     total_iters = 0  # the total number of training iterations
+    epoch_iters = math.ceil(opt.max_dataset_size/opt.batch_size)*opt.batch_size
+    print(f"EPOCH ITERS {epoch_iters}")
+    
     for epoch in range(opt.epoch_count, opt.n_epochs + opt.n_epochs_decay + 1):
         epoch_start_time = time.time()  # timer for entire epoch
         iter_data_time = time.time()  # timer for data loading per iteration
-        epoch_iter = 0  # the number of training iterations in current epoch, reset to 0 every epoch
         visualizer.reset()
+        epoch_iter=0
         # Set epoch for DistributedSampler
-        epoch_iters = math.ceil(opt.max_dataset_size/opt.batch_size)*opt.batch_size
         for i in range(math.ceil(opt.max_dataset_size/opt.batch_size)):  # inner loop within one epoch
             iter_start_time = time.time()  # timer for computation per iteration
-            if total_iters % opt.print_freq == 0:
+            if total_iters % opt.print_freq*epoch_iters == 0:
                 t_data = iter_start_time - iter_data_time
 
             total_iters += opt.batch_size
@@ -57,23 +59,24 @@ if __name__ == "__main__":
             data = generator.generate_batch(opt.batch_size)
             model.set_input(data)  # unpack data from dataset and apply preprocessing
             model.optimize_parameters()  # calculate loss functions, get gradients, update network weights
-            if total_iters % opt.display_freq*epoch_iters == 0:  # display images on visdom and save images to a HTML file
-                save_result = total_iters % opt.update_html_freq == 0
-                model.compute_visuals()
-                visualizer.display_current_results(model.get_current_visuals(), epoch, total_iters, save_result)
-
-            if total_iters % opt.print_freq*epoch_iters == 0:  # print training losses and save logging information to the disk
+        
+            if total_iters % (opt.print_freq*epoch_iters) == 0:  # print training losses and save logging information to the disk
                 losses = model.get_current_losses()
                 t_comp = (time.time() - iter_start_time) / opt.batch_size
                 visualizer.print_current_losses(epoch, epoch_iter, losses, t_comp, t_data)
                 visualizer.plot_current_losses(total_iters, losses)
-                model.plot_1d_signals(visualizer, epoch)
                 
+                
+        if epoch % opt.display_freq == 0:  # display images on visdom and save images to a HTML file
+                save_result = total_iters % opt.update_html_freq == 0
+                model.compute_visuals()
+                visualizer.display_current_results(model.get_current_visuals(), epoch, total_iters, save_result)
+                model.plot_1d_signals(visualizer, epoch)
 
-            if total_iters % opt.save_latest_freq == 0:  # cache our latest model every <save_latest_freq> iterations
-                print(f"saving the latest model (epoch {epoch}, total_iters {total_iters})")
-                save_suffix = f"iter_{total_iters}" if opt.save_by_iter else "latest"
-                model.save_networks(save_suffix)
+        if epoch % opt.save_latest_freq == 0:  # cache our latest model every <save_latest_freq> iterations
+            print(f"saving the latest model (epoch {epoch}, total_iters {total_iters})")
+            save_suffix = f"iter_{total_iters}" if opt.save_by_iter else "latest"
+            model.save_networks(save_suffix)
 
             iter_data_time = time.time()
 
