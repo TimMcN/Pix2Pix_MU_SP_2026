@@ -136,7 +136,7 @@ class Pix2PixMUModel(BaseModel):
         writer.add_figure('Overlayed Seperated Signals', fig2, global_step=epoch)
         writer.add_figure('Overlayed Sum Signals', fig4, global_step=epoch)
         writer.add_figure('Residual', fig5, global_step=epoch)
-        
+        writer.flush()
         plt.close(fig1)
         plt.close(fig2)
         plt.close(fig4)
