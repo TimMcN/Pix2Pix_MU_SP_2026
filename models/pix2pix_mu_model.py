@@ -98,7 +98,10 @@ class Pix2PixMUModel(BaseModel):
         for name in self.visual_names:
             if isinstance(name, str):
                 visual_ret[name] = getattr(self, name)
-                scaled_value = torch.abs( visual_ret[name]*multiplier)
+                print(f"Image name: {name}" )
+                if name == "fake_b" or name == "real_b":
+                    visual_ret[name]+=0.9
+                scaled_value = torch.abs(visual_ret[name]*multiplier)
                 log_value = torch.log1p(scaled_value)
                 normalized_01 = log_value / max_log_val
                 visual_ret[name] = (normalized_01 * 2.0) - 1.0
@@ -112,23 +115,32 @@ class Pix2PixMUModel(BaseModel):
         real_A_row = self.real_A[0:max_s, 0, 0, :].detach().cpu().numpy()
         fake_B_rows = self.fake_B[0:max_s, 0].detach().cpu().numpy()
         real_B_rows = self.real_B[0:max_s, 0].detach().cpu().numpy()
-
+        real_B_sum = torch.sum(self.real_B[0:max_s, 0], dim =2).detach().cpu().numpy()
+        fake_B_sum = torch.sum(self.fake_B[0:max_s, 0], dim=2).detach().cpu().numpy()
         fig1, axes1 = plt.subplots(1, max_s, figsize=(15, 5))
         fig2, axes2 = plt.subplots(1, max_s, figsize=(15, 5))
-        fig3, axes3 = plt.subplots(1, max_s, figsize=(15, 5))
+        #fig3, axes3 = plt.subplots(1, max_s, figsize=(15, 5))
+        fig4, axes4 = plt.subplots(1, max_s, figsize=(15, 5))
+        fig5, axes5 = plt.subplots(1, max_s, figsize=(15, 5))
         for i in range(max_s):
 
             axes1[i].plot(real_A_row[i], color='blue') 
-            axes2[i].plot(fake_B_rows[i].T, color='red', alpha=0.1)  
-            axes3[i].plot(real_B_rows[i].T, color='green', alpha=0.1)
+            axes2[i].plot(fake_B_rows[i].T, color='red', alpha=0.3)  
+            axes2[i].plot(real_B_rows[i].T, color='green', alpha=0.3)
+            axes4[i].plot(fake_B_sum[i], color="purple")
+            axes4[i].plot(real_B_sum[i], color="sandybrown", linestyle="dotted")
+            axes5[i].plot(real_B_sum[i]- fake_B_sum[i], color="Red")
 
         writer.add_figure('Input Signal', fig1, global_step=epoch)
-        writer.add_figure('Target Signal', fig3, global_step=epoch)
-        writer.add_figure('Predicted Signal', fig2, global_step=epoch)
+        #writer.add_figure('Target Signal', fig3, global_step=epoch)
+        writer.add_figure('Overlayed Seperated Signals', fig2, global_step=epoch)
+        writer.add_figure('Overlayed Sum Signals', fig4, global_step=epoch)
+        writer.add_figure('Residual', fig5, global_step=epoch)
         
         plt.close(fig1)
         plt.close(fig2)
-        plt.close(fig3)
+        plt.close(fig4)
+        plt.close(fig5)
     
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""

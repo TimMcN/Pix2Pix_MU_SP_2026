@@ -46,7 +46,7 @@ if __name__ == "__main__":
         epoch_iter = 0  # the number of training iterations in current epoch, reset to 0 every epoch
         visualizer.reset()
         # Set epoch for DistributedSampler
-        
+        epoch_iters = math.ceil(opt.max_dataset_size/opt.batch_size)*opt.batch_size
         for i in range(math.ceil(opt.max_dataset_size/opt.batch_size)):  # inner loop within one epoch
             iter_start_time = time.time()  # timer for computation per iteration
             if total_iters % opt.print_freq == 0:
@@ -57,12 +57,12 @@ if __name__ == "__main__":
             data = generator.generate_batch(opt.batch_size)
             model.set_input(data)  # unpack data from dataset and apply preprocessing
             model.optimize_parameters()  # calculate loss functions, get gradients, update network weights
-            if total_iters % opt.display_freq == 0:  # display images on visdom and save images to a HTML file
+            if total_iters % opt.display_freq*epoch_iters == 0:  # display images on visdom and save images to a HTML file
                 save_result = total_iters % opt.update_html_freq == 0
                 model.compute_visuals()
                 visualizer.display_current_results(model.get_current_visuals(), epoch, total_iters, save_result)
 
-            if total_iters % opt.print_freq == 0:  # print training losses and save logging information to the disk
+            if total_iters % opt.print_freq*epoch_iters == 0:  # print training losses and save logging information to the disk
                 losses = model.get_current_losses()
                 t_comp = (time.time() - iter_start_time) / opt.batch_size
                 visualizer.print_current_losses(epoch, epoch_iter, losses, t_comp, t_data)
