@@ -98,7 +98,6 @@ class Pix2PixMUModel(BaseModel):
         for name in self.visual_names:
             if isinstance(name, str):
                 visual_ret[name] = getattr(self, name)
-                print(f"Image name: {name}" )
                 if name == "fake_b" or name == "real_b":
                     visual_ret[name]+=0.9
                 scaled_value = torch.abs(visual_ret[name]*multiplier)
@@ -113,10 +112,10 @@ class Pix2PixMUModel(BaseModel):
             return
         max_s = 4 if 4 < self.opt.batch_size else self.opt.batch_size
         real_A_row = self.real_A[0:max_s, 0, 0, :].detach().cpu().numpy()
-        fake_B_rows = self.fake_B[0:max_s, 0].detach().cpu().numpy()
-        real_B_rows = self.real_B[0:max_s, 0].detach().cpu().numpy()
-        real_B_sum = torch.sum(self.real_B[0:max_s, 0], dim =2).detach().cpu().numpy()
-        fake_B_sum = torch.sum(self.fake_B[0:max_s, 0], dim=2).detach().cpu().numpy()
+        fake_B_rows = self.fake_B[0:max_s, 0].add_(0.9).detach().cpu().numpy()
+        real_B_rows = self.real_B[0:max_s, 0].add_(0.9).detach().cpu().numpy()
+        real_B_sum = torch.sum(self.real_B[0:max_s, 0], dim =1).detach().cpu().numpy()
+        fake_B_sum = torch.sum(self.fake_B[0:max_s, 0], dim=1).detach().cpu().numpy()
         fig1, axes1 = plt.subplots(1, max_s, figsize=(15, 5))
         fig2, axes2 = plt.subplots(1, max_s, figsize=(15, 5))
         #fig3, axes3 = plt.subplots(1, max_s, figsize=(15, 5))
@@ -127,9 +126,10 @@ class Pix2PixMUModel(BaseModel):
             axes1[i].plot(real_A_row[i], color='blue') 
             axes2[i].plot(fake_B_rows[i].T, color='red', alpha=0.3)  
             axes2[i].plot(real_B_rows[i].T, color='green', alpha=0.3)
-            axes4[i].plot(fake_B_sum[i], color="purple")
-            axes4[i].plot(real_B_sum[i], color="sandybrown", linestyle="dotted")
+            axes4[i].plot(fake_B_sum[i], color="purple", alpha=0.5)
+            axes4[i].plot(real_B_sum[i], color="sandybrown", alpha=0.5)
             axes5[i].plot(real_B_sum[i]- fake_B_sum[i], color="Red")
+
 
         writer.add_figure('Input Signal', fig1, global_step=epoch)
         #writer.add_figure('Target Signal', fig3, global_step=epoch)
