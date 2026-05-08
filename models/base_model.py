@@ -165,6 +165,7 @@ class BaseModel(ABC):
 
         lr = self.optimizers[0].param_groups[0]["lr"]
         print(f"learning rate {old_lr:.7f} -> {lr:.7f}")
+        return lr
 
     def get_current_visuals(self):
         """Return visualization images. train.py will display these images with visdom, and save the images to a HTML"""

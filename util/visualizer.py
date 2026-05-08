@@ -149,8 +149,17 @@ class Visualizer:
         if dist.is_initialized() and dist.get_rank() != 0:
             return
         if (self.opt.use_tensorboard):
+            l1_loss = 0
+            gan_loss = 0 
             for label, value in losses.items():
+                l1_loss = value if label == "G_L1" else l1_loss
+                gan_loss = value if label == "G_GAN" else gan_loss
                 self.tb_writer.add_scalar(f'Loss/{label}', value, total_iters)
+            
+            self.tb_writer.add_scalar(f'Loss/G_Loss-Combined', l1_loss+gan_loss, total_iters)
+            self.tb_writer.add_scalars(f'Loss/G_Overlay', {"G_L1": l1_loss, "G_GAN":gan_loss},total_iters)
+            
+            
         if self.use_wandb:
             self.wandb_run.log(losses, step=total_iters)
 

@@ -35,7 +35,7 @@ if __name__ == "__main__":
     #dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
     dataset_size = opt.max_dataset_size  # get the number of images in the dataset.
     print(f"The number of training images = {dataset_size}")
-    generator = Lorentz_Generator(mode="diagonalized", dataset=opt.dataset, padding = 25, n_range=(0.1, 2000, 256))
+    generator = Lorentz_Generator(mode="diagonalized", dataset=opt.dataset, padding = 25, n_range=(0.1, 2000, 256), c_dev=0.75)
     model = create_model(opt)  # create a model given opt.model and other options
     model.setup(opt)  # regular setup: load and print networks; create schedulers
     visualizer = Visualizer(opt)  # create a visualizer that display/save images and plots
@@ -81,8 +81,8 @@ if __name__ == "__main__":
 
                 iter_data_time = time.time()
 
-        model.update_learning_rate()  # update learning rates at the end of every epoch
-
+        lr= model.update_learning_rate()  # update learning rates at the end of every epoch
+        visualizer.tb_writer.add_scalar(f'Loss/Learning Rate', lr, total_iters)
         if epoch % opt.save_epoch_freq == 0:  # cache our model every <save_epoch_freq> epochs
             print(f"saving the model at the end of epoch {epoch}, iters {total_iters}")
             model.save_networks(epoch)
