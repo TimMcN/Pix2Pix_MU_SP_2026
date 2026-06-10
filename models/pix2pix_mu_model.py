@@ -39,7 +39,11 @@ class Pix2PixMUModel(BaseModel):
             parser.add_argument("--lambda_L1", type=float, default=100.0, help="weight for L1 loss")
             parser.add_argument("--G_LR_Mul", type=float, default=1.0, help="Learning Rate Multiplier for Generator")
             parser.add_argument("--D_LR_Mul", type=float, default=0.1, help="Learning Rate Multiplier for Discriminator")
-            parser.add_argument("--dataset", type=int, default=1, help="Dataset Key for lorentz generation")
+            parser.add_argument("--dataset", type=str, default=1, help="Dataset Key for lorentz generation")
+            parser.add_argument("--plateau_patience", type=int, default=50, help="Plateau patience")    
+            parser.add_argument("--plateau_begin", type=int, default=250, help="Epoch to begin plateau")
+            parser.add_argument("--noise_max", type=float, default=0, help="Maximum magnitude of noise to be added to signal")     
+            
 
         return parser
 
@@ -118,29 +122,27 @@ class Pix2PixMUModel(BaseModel):
         fake_B_sum = torch.sum(self.fake_B[0:max_s, 0], dim=1).detach().cpu().numpy()
         fig1, axes1 = plt.subplots(1, max_s, figsize=(15, 5))
         fig2, axes2 = plt.subplots(1, max_s, figsize=(15, 5))
-        #fig3, axes3 = plt.subplots(1, max_s, figsize=(15, 5))
+        fig3, axes3 = plt.subplots(1, max_s, figsize=(15, 5))
         fig4, axes4 = plt.subplots(1, max_s, figsize=(15, 5))
-        fig5, axes5 = plt.subplots(1, max_s, figsize=(15, 5))
         for i in range(max_s):
 
             axes1[i].plot(real_A_row[i], color='blue') 
             axes2[i].plot(fake_B_rows[i].T, color='red', alpha=0.3)  
             axes2[i].plot(real_B_rows[i].T, color='green', alpha=0.3)
-            axes4[i].plot(fake_B_sum[i], color="purple", alpha=0.5)
-            axes4[i].plot(real_B_sum[i], color="sandybrown", alpha=0.5)
-            axes5[i].plot(real_B_sum[i]- fake_B_sum[i], color="Red")
+            axes3[i].plot(fake_B_sum[i], color="purple", alpha=0.5)
+            axes3[i].plot(real_B_sum[i], color="sandybrown", alpha=0.5)
+            axes4[i].plot(real_B_sum[i]- fake_B_sum[i], color="Red")
 
 
         writer.add_figure('Input Signal', fig1, global_step=epoch)
-        #writer.add_figure('Target Signal', fig3, global_step=epoch)
         writer.add_figure('Overlayed Seperated Signals', fig2, global_step=epoch)
-        writer.add_figure('Overlayed Sum Signals', fig4, global_step=epoch)
-        writer.add_figure('Residual', fig5, global_step=epoch)
+        writer.add_figure('Overlayed Sum Signals', fig3, global_step=epoch)
+        writer.add_figure('Residual', fig4, global_step=epoch)
         writer.flush()
         plt.close(fig1)
         plt.close(fig2)
+        plt.close(fig3)
         plt.close(fig4)
-        plt.close(fig5)
     
     def forward(self):
         """Run forward pass; called by both functions <optimize_parameters> and <test>."""
@@ -184,3 +186,4 @@ class Pix2PixMUModel(BaseModel):
         self.optimizer_G.zero_grad()  # set G's gradients to zero
         self.backward_G()  # calculate graidents for G
         self.optimizer_G.step()  # update G's weights
+

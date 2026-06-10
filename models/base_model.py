@@ -44,6 +44,7 @@ class BaseModel(ABC):
         self.optimizers = []
         self.image_paths = []
         self.metric = 0  # used for learning rate policy 'plateau'
+        self.epoch=0
 
     @staticmethod
     def modify_commandline_options(parser, is_train):
@@ -157,9 +158,12 @@ class BaseModel(ABC):
     def update_learning_rate(self):
         """Update learning rates for all the networks; called at the end of every epoch"""
         old_lr = self.optimizers[0].param_groups[0]["lr"]
+        self.epoch += 1
         for scheduler in self.schedulers:
-            if self.opt.lr_policy == "plateau":
+            if self.opt.lr_policy == "plateau" and self.epoch > self.opt.plateau_begin:
                 scheduler.step(self.metric)
+            elif self.opt.lr_policy=="plateau":
+                continue
             else:
                 scheduler.step()
 
