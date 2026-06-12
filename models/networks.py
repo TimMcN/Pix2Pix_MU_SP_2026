@@ -474,13 +474,14 @@ class UnetSkipConnectionBlock(nn.Module):
         """
         super(UnetSkipConnectionBlock, self).__init__()
         self.outermost = outermost
+        self.innermost = innermost
         if type(norm_layer) == functools.partial:
             use_bias = norm_layer.func == nn.InstanceNorm2d
         else:
             use_bias = norm_layer == nn.InstanceNorm2d
         if input_nc is None:
             input_nc = outer_nc
-        downconv = nn.Conv2d(input_nc, inner_nc, kernel_size=4, stride=2, padding=1, bias=use_bias)
+        downconv = nn.Conv2d(input_nc, inner_nc, kernel_size=(1,4), stride=(1,2), padding=(0,1), bias=use_bias)
         downrelu = nn.LeakyReLU(0.2, True)
         downnorm = norm_layer(inner_nc)
         uprelu = nn.ReLU(True)
@@ -498,7 +499,7 @@ class UnetSkipConnectionBlock(nn.Module):
             model = down + up
         else:
             upconv = nn.ConvTranspose2d(inner_nc * 2, outer_nc, kernel_size=4, stride=2, padding=1, bias=use_bias)
-            down = [downrelu, downconv, downnorm]
+            down = [downrelu, downconv, downnorm] 
             up = [uprelu, upconv, upnorm]
 
             if use_dropout:
@@ -511,9 +512,23 @@ class UnetSkipConnectionBlock(nn.Module):
     def forward(self, x):
         if self.outermost:
             return self.model(x)
+        elif self.innermost:
+            skip = x
+            x = self.model[0](x)
+            x = self.model[1](x)
+            x = x.expand(-1,-1,x.shape[3], -1)
+            return torch.cat([skip.expand(-1,-1, skip.shape[3], -1), self.model[2:](x)] ,1)
+            
         else:  # add skip connections
-            return torch.cat([x, self.model(x)], 1)
+            return torch.cat([x.expand(-1,-1,x.shape[3], -1), self.model(x)], 1)
 
+class PrintXshape(nn.Module):
+    def __init__(self, label=""):
+        super().__init__()
+        self.label = label
+    def forward(self,x):
+        print(f"{self.label} X shape: {x.shape}")
+        return x
 
 class NLayerDiscriminator(nn.Module):
     """Defines a PatchGAN discriminator"""
